@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mapa de Competidores</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 30px; }
+    canvas { margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
+    input, button { margin: 5px; padding: 6px 12px; font-size: 14px; }
+    .leyenda {
+      margin-top: 20px;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .item-leyenda {
+      margin: 4px 0;
+      display: flex;
+      align-items: center;
+    }
+    .color-box {
+      width: 15px;
+      height: 15px;
+      margin-right: 8px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .boton-descarga {
+      margin-top: 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .boton-descarga:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>Mapa Interactivo de Competidores</h2>
+
+  <label>Nombre:</label>
+  <input type="text" id="nombre">
+  <label>Precio (0-100):</label>
+  <input type="number" id="precio" min="0" max="100">
+  <label>Innovación (0-100):</label>
+  <input type="number" id="innovacion" min="0" max="100">
+  <button onclick="agregarCompetidor()">Agregar Competidor</button>
+
+  <!-- CONTENEDOR PARA EXPORTAR -->
+  <div id="contenedorExportable">
+    <canvas id="grafico" width="600" height="400"></canvas>
+
+    <div class="leyenda" id="leyenda">
+      <h3>Competidores agregados:</h3>
+      <!-- Aquí aparecerán los nombres y colores -->
+    </div>
+  </div>
+
+  <button class="boton-descarga" onclick="descargarGraficoConLeyenda()">Descargar Gráfico</button>
+
+  <script>
+    const ctx = document.getElementById('grafico').getContext('2d');
+    const datos = {
+      datasets: [{
+        label: 'Competidores',
+        data: [],
+        backgroundColor: [],
+        pointRadius: 6
+      }]
+    };
+
+    const opciones = {
+      scales: {
+        x: {
+          min: 0,
+          max: 100,
+          title: { display: true, text: 'Precio Percibido' }
+        },
+        y: {
+          min: 0,
+          max: 100,
+          title: { display: true, text: 'Innovación Percibida' }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.raw.label;
+            }
+          }
+        }
+      }
+    };
+
+    const chart = new Chart(ctx, {
+      type: 'scatter',
+      data: datos,
+      options: opciones
+    });
+
+    function generarColorAleatorio() {
+      const r = Math.floor(Math.random() * 156 + 100);
+      const g = Math.floor(Math.random() * 156 + 100);
+      const b = Math.floor(Math.random() * 156 + 100);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function agregarALeyenda(nombre, color) {
+      const leyenda = document.getElementById("leyenda");
+      const item = document.createElement("div");
+      item.className = "item-leyenda";
+      item.innerHTML = `
+        <span class="color-box" style="background-color: ${color};"></span>
+        <span>${nombre}</span>
+      `;
+      leyenda.appendChild(item);
+    }
+
+    function agregarCompetidor() {
+      const nombre = document.getElementById('nombre').value;
+      const precio = parseInt(document.getElementById('precio').value);
+      const innovacion = parseInt(document.getElementById('innovacion').value);
+
+      if (!nombre || isNaN(precio) || isNaN(innovacion)) {
+        alert("Completa todos los campos correctamente.");
+        return;
+      }
+
+      const color = generarColorAleatorio();
+
+      datos.datasets[0].data.push({ x: precio, y: innovacion, label: nombre });
+      datos.datasets[0].backgroundColor.push(color);
+      chart.update();
+
+      agregarALeyenda(nombre, color);
+
+      // Limpiar campos
+      document.getElementById('nombre').value = '';
+      document.getElementById('precio').value = '';
+      document.getElementById('innovacion').value = '';
+    }
+
+    function descargarGraficoConLeyenda() {
+      const contenedor = document.getElementById('contenedorExportable');
+      html2canvas(contenedor).then(canvas => {
+        const enlace = document.createElement('a');
+        enlace.download = 'mapa-competidores-completo.png';
+        enlace.href = canvas.toDataURL();
+        enlace.click();
+      });
+    }
+  </script>
+</body>
+</html>
